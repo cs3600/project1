@@ -26,11 +26,8 @@ int main(int argc, char* argv[]) {
   while (1) {
     // Display prompt
     prompt();
-    // Read in null terminated line of input
+    // Read in line of input
     processLine(); 
-    // You should probably remove this; right now, it
-    // just exits
-    do_exit();
   }
 
   return 0;
@@ -72,11 +69,16 @@ void processLine() {
     size_t argSize = strlen(line);
     char* argv[argSize]; // TODO more efficient allocation of argv size
     getTokens(line, argv);
-    size_t i; // TODO remove
-    for (i = 0; i < argSize; i++) {
-      printf("Token: %s\n", argv[i]);
+    
+    size_t l;
+    for (l = 0; l < argSize; l++) {
+      if (argv[l] == NULL) {
+        break;
+      }
+      printf("Token: %s\n", argv[l]);
     }
-    //execute(argv);
+
+    execute(argv);
   }
 
   // free line buf after malloc  
@@ -90,21 +92,23 @@ void processLine() {
 //     Pointer to an array of char pointers; the result is stored in
 //     this array
 void getTokens(char* line, char* argv[]) {
-
-// TODO the end line pointer check again instead of the '\0' check
-
+  char* endLine = line + strlen(line);
   // loop until line is fully read
-  while (*line != '\0') {
+  while (line != endLine) {
     // replace blank space making tokens null terminated strings
-    while (*line == ' ' || *line == '\t' || *line == '\n') {
+    if (*line == ' ' || *line == '\t' || *line == '\n') {
       *line++ = '\0';
     }
     // encountered non-white space, store its address, increment pointer
-    *argv++ = line;
-    printf
-    // skip non-white space
-    while (*line != '\0' && *line != ' ' && *line != '\t' && *line != '\n') {
-      line++;
+    if (line != endLine) {
+      *argv++ = line;
+      // skip non-white space
+      while (*line != '\0' && *line != ' ' && *line != '\t' && *line != '\n') {
+        line++;
+      }
+    }
+    else {
+      break;
     }
   }
   // null terminate the array to use exec
@@ -121,7 +125,7 @@ void execute(char* argv[]) {
   if (pid == -1) {
     printf("Error: could not fork child process."); // TODO comply with project guidelines
   }
-  // child process, execute and daddy proud
+  // child process, execute and make daddy proud
   else if (pid == 0) {
     // execute the command, check for error
     if (execvp(argv[0], argv) < 0) {
