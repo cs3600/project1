@@ -67,9 +67,11 @@ void processLine() {
   else {
     // get array of command tokens
     size_t argSize = strlen(line);
+    
     char* argv[argSize]; // TODO more efficient allocation of argv size
     getTokens(line, argv);
     
+    // REMOVE TODO
     size_t l;
     for (l = 0; l < argSize; l++) {
       if (argv[l] == NULL) {
@@ -78,7 +80,14 @@ void processLine() {
       printf("Token: %s\n", argv[l]);
     }
 
-    execute(argv);
+    // exit or logout, do clean exit
+    if (strcmp(argv[0], "exit") == 0 || strcmp(argv[0], "logout") == 0) {
+      do_exit();
+    }
+    // execute the program if the first arg is not null
+    else if (argv[0]) {
+      execute(argv);
+    }
   }
 
   // free line buf after malloc  
@@ -104,6 +113,10 @@ void getTokens(char* line, char* argv[]) {
       *argv++ = line;
       // skip non-white space
       while (*line != '\0' && *line != ' ' && *line != '\t' && *line != '\n') {
+        // escape character
+        if (*line == '\\') {
+          *line++ = ' '; // TODO remove \, this is hardcoded space
+        }
         line++;
       }
     }
@@ -123,13 +136,14 @@ void execute(char* argv[]) {
   pid_t pid = fork();
   // could not fork
   if (pid == -1) {
-    printf("Error: could not fork child process."); // TODO comply with project guidelines
+    printf("Error: Could not fork child process.\n");
   }
   // child process, execute and make daddy proud
   else if (pid == 0) {
     // execute the command, check for error
     if (execvp(argv[0], argv) < 0) {
-      printf("%s", "Error: could not execute."); // TODO comply with project guidelines
+      printf("%s", "Error: Command not found.\n");
+      exit(-1);
     }
   }
   // parent process, wait for your child
