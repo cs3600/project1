@@ -25,4 +25,10 @@ handle piped commands:
   ls | wc
   
 
-Additional features may be supported.
+Additional features that may be supported:
+
+  More Error Handling.
+  
+  cd command.
+  
+  
