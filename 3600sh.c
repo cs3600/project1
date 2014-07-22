@@ -101,15 +101,14 @@ void processLine() {
 //     Pointer to an array of strings; the result is stored in
 //     this array
 void getTokens(char* line, char* argv[]) {
-  char* endLine = line + strlen(line);
-  // loop until line is fully read
-  while (line != endLine) {
+  // loop until string termination reached
+  while (*line != '\0') {
     // eat white space
     while (*line == ' ' || *line == '\t' || *line == '\n') {
       line++;
     }
     // check that the end of the string hasn't been reached
-    if (line != endLine) {
+    if (*line != '\0') {
       // pointer to start of the word
       char* word = line;
       // skip non-white space
@@ -117,7 +116,6 @@ void getTokens(char* line, char* argv[]) {
         // escape character
         if (*line == '\\') {
           memmove(&line[0], &line[1], strlen(line));
-          // TODO adds extra space causing extra arg, but escapes properly
         }
         line++;
       }
