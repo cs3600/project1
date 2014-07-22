@@ -35,7 +35,7 @@ Execute basic commands (support flags):
 ###Future Features
 
 - more error handling.
-  
 - **cd** command.
-  
-  
+- interrupt **signal**.
+- tab completion.
+- command memory.
