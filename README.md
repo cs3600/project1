@@ -1,17 +1,22 @@
-Shell Project
+#Shell Project
 
-Features:
+This project focuses on creating a shell that reads in commands, line by line, from standard input, executes those commands, and writes the output to standard output.
 
-launch basic commands with optional flags, such as:
+##Features
 
+Execute basic commands (support flags):
+
+```
   ls
   
   ls -l
   
   pwd
+```
 
-handle redirections:
+###Redirections
 
+```
   ls > out.txt
   
   ls 1> out.txt
@@ -19,16 +24,18 @@ handle redirections:
   ls 2> error.txt
   
   kill -9 < procId.txt
+```
   
-handle piped commands:
+###Piped Commands
 
+```
   ls | wc
-  
+```  
 
-Additional features that may be supported:
+###Future Features
 
-  More Error Handling.
+- more error handling.
   
-  cd command.
+- **cd** command.
   
   
