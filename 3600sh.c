@@ -98,27 +98,33 @@ void processLine() {
 // @param line
 //     The line to tokenize
 // @param argv
-//     Pointer to an array of char pointers; the result is stored in
+//     Pointer to an array of strings; the result is stored in
 //     this array
 void getTokens(char* line, char* argv[]) {
   char* endLine = line + strlen(line);
   // loop until line is fully read
   while (line != endLine) {
-    // replace blank space making tokens null terminated strings
-    if (*line == ' ' || *line == '\t' || *line == '\n') {
-      *line++ = '\0';
+    // eat white space
+    while (*line == ' ' || *line == '\t' || *line == '\n') {
+      line++;
     }
-    // encountered non-white space, store its address, increment pointer
+    // check that the end of the string hasn't been reached
     if (line != endLine) {
-      *argv++ = line;
+      // pointer to start of the word
+      char* word = line;
       // skip non-white space
       while (*line != '\0' && *line != ' ' && *line != '\t' && *line != '\n') {
         // escape character
         if (*line == '\\') {
-          *line++ = ' '; // TODO remove \, this is hardcoded space
+          memmove(&line[0], &line[1], strlen(line));
+          // TODO adds extra space causing extra arg, but escapes properly
         }
         line++;
       }
+      // terminate the string
+      *line++ = '\0';
+      // add to array of commands
+      *argv++ = word;
     }
     else {
       break;
