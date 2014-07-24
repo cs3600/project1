@@ -60,7 +60,7 @@ void processLine() {
 
   // check error or EOF for stdin
   if (ferror(stdin) || feof(stdin)) {
-    printf("%s\n", "Error reading input."); // TODO comply with project guidelines
+    printf("%s\n", "Error: reading input."); // TODO comply with project guidelines
   }
 
   // process input
@@ -144,9 +144,17 @@ void execute(char* argv[]) {
   }
   // child process, execute and make daddy proud
   else if (pid == 0) {
+    // exit status
+    int status;
     // execute the command, check for error
-    if (execvp(argv[0], argv) < 0) {
-      printf("%s", "Error: Command not found.\n");
+    if ((status = execvp(argv[0], argv)) < 0) {
+      // check for permission errors
+      if (status == EACCES) {
+        printf("%s", "Error: Permission Denied.\n");
+      }
+      else {
+        printf("%s", "Error: Command not found.\n");
+      }
       exit(-1);
     }
   }
