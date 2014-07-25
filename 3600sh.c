@@ -124,6 +124,14 @@ void getTokens(char* line, char* argv[]) {
         // escape character
         if (*line == '\\') {
           memmove(&line[0], &line[1], strlen(line));
+          // handle '\t'
+          if (*line == 't') {
+            *line = '\t';
+          }
+          // check if valid escape
+          else if (*line != '\\' && *line != ' ' && *line != '&') {
+            printf("Error: Unrecognized escape sequence.\n");
+          }
         }
         line++;
       }
