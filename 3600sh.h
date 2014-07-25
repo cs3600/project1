@@ -22,6 +22,7 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <pwd.h>
 
 void do_exit();
 void prompt();

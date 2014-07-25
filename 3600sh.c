@@ -13,6 +13,7 @@
 #define USE(x) (x) = (x)
 // Obtained through "getconf HOST_NAME_MAX"
 // Is there a cleaner way of doing this? HARDCODED TODO
+// sysconf(HOST_NAME_MAX)
 #define HOST_NAME_MAX 64
 
 int main(int argc, char* argv[]) {
@@ -38,14 +39,25 @@ int main(int argc, char* argv[]) {
 // '[user]@[host]:[cwd]> '
 // where cwd is the current working directory.
 void prompt() {
-  // hostname buf
+  // gets the username
+  char* user = "???";
+  struct passwd* pw = getpwuid(getuid());
+  if (pw) {
+    user = pw->pw_name;
+  }
+
+  // gets the hostname
   char hostname[HOST_NAME_MAX];
-  // cwd buf, uses malloc
-  char* cwd = getcwd(NULL, 0);
-  // load hostname into buf
   gethostname(hostname, HOST_NAME_MAX);
+
+  // gets cwd, uses malloc
+  char* cwd = getcwd(NULL, 0);
+
   // print console prompt
-  printf("%s@%s:%s> ", getlogin(), hostname, cwd);
+  if (pw && cwd) {
+    printf("%s@%s:%s> ", user, hostname, cwd);
+  }
+
   // flush output buffer to console
   fflush(stdout);
   // free cwd buf after malloc
@@ -58,17 +70,16 @@ void processLine() {
   // read input from console
   char* line = getline();
 
-  // check error
+  // exit on input error
   if (ferror(stdin)) {
-    fprintf(stderr, "getline failed: %s\n", strerror(errno)); // TODO
+    printf("Error: reading input.");
     do_exit();
   }
 
-  // process input
-  else {
+  // process input (single newline and empty string ignored)
+  else if (line[0] != '\n' && strcmp(line, "")) {
     // get array of command tokens
     size_t argSize = strlen(line);
-    
     char* argv[argSize]; // TODO more efficient allocation of argv size
     getTokens(line, argv);
 
@@ -80,6 +91,11 @@ void processLine() {
     else if (argv[0]) {
       execute(argv);
     }
+  }
+
+  // check for end of input
+  if (feof(stdin)) {
+    do_exit();
   }
 
   // free line buf after malloc  
@@ -124,7 +140,8 @@ void getTokens(char* line, char* argv[]) {
   *argv = '\0';
 }
 
-// Function that executes the commands in argv
+// Function that executes the commands in argv.
+// at the end of program execution.
 // @param argv
 //     The commands to execute
 void execute(char* argv[]) {
@@ -141,7 +158,7 @@ void execute(char* argv[]) {
     // execute the command, check for error
     if ((status = execvp(argv[0], argv)) < 0) {
       // check for permission errors
-      if (status == EACCES) {
+      if (errno == EACCES) {
         printf("%s", "Error: Permission Denied.\n");
       }
       else {
@@ -159,7 +176,6 @@ void execute(char* argv[]) {
 // Function which exits, printing the necessary message
 void do_exit() {
   printf("So long and thanks for all the fish!\n");
-
   // Wait for all children to exit, then exit
   while (wait(NULL) > 0) {}
   exit(0);
