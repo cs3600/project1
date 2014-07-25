@@ -58,9 +58,10 @@ void processLine() {
   // read input from console
   char* line = getline();
 
-  // check error or EOF for stdin
-  if (ferror(stdin) || feof(stdin)) {
-    printf("%s\n", "Error: reading input."); // TODO comply with project guidelines
+  // check error
+  if (ferror(stdin)) {
+    fprintf(stderr, "getline failed: %s\n", strerror(errno)); // TODO
+    do_exit();
   }
 
   // process input
@@ -70,15 +71,6 @@ void processLine() {
     
     char* argv[argSize]; // TODO more efficient allocation of argv size
     getTokens(line, argv);
-    
-    // REMOVE TODO
-    size_t l;
-    for (l = 0; l < argSize; l++) {
-      if (argv[l] == NULL) {
-        break;
-      }
-      printf("Token: %s\n", argv[l]);
-    }
 
     // exit or logout, do clean exit
     if (strcmp(argv[0], "exit") == 0 || strcmp(argv[0], "logout") == 0) {
