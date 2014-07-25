@@ -31,8 +31,8 @@ my @tries = (	"ls",
 		"stat /home\n",
 		"opdpfo\nmfdoimfo",
 		"ls a b c d e f g h i\n",
-		"pwd\nls\npwd\nls\nuname -a\nuname-a\nls\n");
-		"whoami\nwho am i\nwhoami who am i",
+		"pwd\nls\npwd\nls\nuname -a\nuname-a\nls\n",
+		"whoami\nwho am i\nwhoami who am i");
 =com
                 "ls /bin > $t1\ncat $t1\n\n",
                 "wc < $t1 > $t2\ncat $t2",
