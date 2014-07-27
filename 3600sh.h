@@ -27,8 +27,8 @@
 void do_exit();
 void prompt();
 void processLine();
-void getTokens(char* line, char* argv[]);
-void execute(char* argv[]);
+int getTokens(char* line, char* argv[]);
+void execute(int argc, char* argv[]);
 void readWord(char* word);
 
 #include <stdio.h>
