@@ -82,7 +82,7 @@ void processLine() {
     int argc = strlen(line);
     char* argv[argc];
     // check tokens are well formatted
-    if (getTokens(line, argv)) {
+    if ((argc = getTokens(line, argv)) != -1) {
       // exit or logout, do clean exit
       if (strcmp(argv[0], "exit") == 0 || strcmp(argv[0], "logout") == 0) {
         do_exit();
@@ -113,8 +113,11 @@ void processLine() {
 //     Pointer to an array of strings; the result is stored in
 //     this array
 // @return
-//     0 if invalid escape sequence is encountered. 1 otherwise.
+//     -1 if invalid escape sequence is encountered. Otherwise
+//     the size of the resulting array is returned.
 int getTokens(char* line, char* argv[]) {
+  // size of resulting array
+  int argc = 0;
   // loop until string termination reached
   while (*line != '\0') {
     // eat white space
@@ -137,15 +140,16 @@ int getTokens(char* line, char* argv[]) {
           // check if valid escape
           else if (*line != '\\' && *line != ' ' && *line != '&') {
             printf("Error: Unrecognized escape sequence.\n");
-            return 0;
+            return -1;
           }
         }
         line++;
       }
       // terminate the string
       *line++ = '\0';
-      // add to array of commands
+      // add to array of commands, keep track of size
       *argv++ = word;
+       argc++;
     }
     else {
       break;
@@ -153,7 +157,7 @@ int getTokens(char* line, char* argv[]) {
   }
   // null terminate the array to use exec
   *argv = '\0';
-  return 1;
+  return argc;
 }
 
 // Function that executes the commands in argv.
@@ -174,16 +178,19 @@ void execute(int argc, char* argv[]) {
     int i, infd = -1, outfd = -1, errfd = -1;
     for (i = 0; i < argc; i++) {
       // check element is not null
-      if (argv[i]/* && argv[i][0] != '\0' */) {
+      if (argv[i]) {
         printf("tok%d: %s\n", i, argv[i]);
         // check for valid redirection
+        int isredirect = strcmp("<", argv[i]) == 0 ||
+            strcmp(">", argv[i]) == 0 ||
+            strcmp("2>", argv[i]) == 0;
+        if (isredirect && argv[i + 1]) {
 
-/*
           // redirect stdin
           if (strcmp(argv[i], "<") == 0) {
             // close stdin fd
             close(0);
-            // open new file descriptor for reading
+            // open new file descriptor for reading only
             if ((infd = open(argv[i + 1], O_RDONLY)) == -1) {
               printf("Could not open %s.\n", argv[i + 1]);
             }
@@ -228,7 +235,7 @@ void execute(int argc, char* argv[]) {
         else if (isredirect) {
           printf("Error: no arg after redirect.\n");
           exit(-1);
-        }*/
+        }
       }
     }
 
