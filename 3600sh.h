@@ -29,7 +29,7 @@ void prompt();
 void processLine();
 int getTokens(char* line, char* argv[]);
 void execute(int argc, char* argv[]);
-void readWord(char* word);
+int is_redirect(char* s);
 
 #include <stdio.h>
 

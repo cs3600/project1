@@ -65,7 +65,7 @@ void prompt() {
 }
 
 // Function that reads in a line of input and responds
-// by running a command or printing an error statement
+// by running a command or printing an error statement.
 void processLine() {
   // read input from console
   char* line = getline();
@@ -82,7 +82,7 @@ void processLine() {
     int argc = strlen(line);
     char* argv[argc];
     // check tokens are well formatted
-    if ((argc = getTokens(line, argv)) != -1) {
+    if ((argc = getTokens(line, argv)) > 0) {
       // exit or logout, do clean exit
       if (strcmp(argv[0], "exit") == 0 || strcmp(argv[0], "logout") == 0) {
         do_exit();
@@ -107,17 +107,37 @@ void processLine() {
 // of command tokens. This function permits only the 
 // following escape sequences as valid '\t', '\&', '\ ',
 // and '\\'. Any invalid sequence prints an error.
+// This function also only permits background '&' 
+// character can be specified only once, at the end
+// of the input line. The '&' character can be separated 
+// from the final token, but it is not required.
+// Valid backgrounding examples:
+//
+//  ls__&
+//  ls_-l&__
+//
+// Invalid:
+//
+// ls & /
+// ls & &
+//
 // @param line
 //     The line to tokenize
 // @param argv
 //     Pointer to an array of strings; the result is stored in
 //     this array
 // @return
-//     -1 if invalid escape sequence is encountered. Otherwise
-//     the size of the resulting array is returned.
+//     -1 if invalid escape sequence is encountered. 
+//     -2 if background character syntax is invalid.
+//     Otherwise, the size of the resulting array is returned.
 int getTokens(char* line, char* argv[]) {
   // size of resulting array
   int argc = 0;
+  // has the background character '&' been encountered?
+  int bg = 0;
+  // is background character '&' attached to the previous token?
+  int isbgattached = 0;
+
   // loop until string termination reached
   while (*line != '\0') {
     // eat white space
@@ -130,8 +150,24 @@ int getTokens(char* line, char* argv[]) {
       char* word = line;
       // skip non-white space
       while (*line != '\0' && *line != ' ' && *line != '\t' && *line != '\n') {
-        // escape character
-        if (*line == '\\') {
+
+        // background check ;)
+        if (!bg && *line == '&') {
+          bg = 1;
+          // drop the attached & from the token
+          if (*word != '&') {
+            isbgattached = 1;
+            memmove(&line[0], &line[1], strlen(line));
+            continue;
+          }
+        }
+        // already backgrounded before, invalid syntax
+        else if (bg) {
+          printf("Error: Invalid syntax.\n");
+          return -2;
+        }
+        // escape character check
+        else if (*line == '\\') {
           memmove(&line[0], &line[1], strlen(line));
           // handle '\t'
           if (*line == 't') {
@@ -145,11 +181,19 @@ int getTokens(char* line, char* argv[]) {
         }
         line++;
       }
-      // terminate the string
-      *line++ = '\0';
+      // terminate new string token, if not the end of original input string
+      if (*line != '\0') {
+        *line++ = '\0';
+      }
       // add to array of commands, keep track of size
       *argv++ = word;
        argc++;
+      // add new '&' token if it was attached to the
+      // previous token.
+      if (isbgattached) {
+        *argv++ = "&";
+         argc++;
+      }
     }
     else {
       break;
@@ -165,6 +209,8 @@ int getTokens(char* line, char* argv[]) {
 //     The commands to execute. This array
 //     must be null terminated.
 void execute(int argc, char* argv[]) {
+  // background command
+  int bg = strcmp(argv[argc - 1], "&") == 0;
   // fork a child process
   pid_t pid = fork();
   // could not fork
@@ -174,17 +220,33 @@ void execute(int argc, char* argv[]) {
   // child process, execute and make daddy proud
   else if (pid == 0) {
 
+    // ignore '&' token
+    if(bg) {
+      // background the process
+      argv[argc - 1] = NULL;
+    }
+
     // loop and check for redirects
     int i, infd = -1, outfd = -1, errfd = -1;
     for (i = 0; i < argc; i++) {
       // check element is not null
       if (argv[i]) {
-        printf("tok%d: %s\n", i, argv[i]);
+        int isredirect = is_redirect(argv[i]);
         // check for valid redirection
-        int isredirect = strcmp("<", argv[i]) == 0 ||
-            strcmp(">", argv[i]) == 0 ||
-            strcmp("2>", argv[i]) == 0;
         if (isredirect && argv[i + 1]) {
+          
+          // check valid redirect arg, can't be & or a redirect
+          if (is_redirect(argv[i + 1]) || strcmp(argv[i + 1], "&") == 0) {
+            printf("Error: Invalid syntax.\n");
+            exit(-1);
+          }
+
+          // arguments after the first redirection file must be either
+          // another redirection or the & character
+          if (argv[i + 2] && !(is_redirect(argv[i + 2]) || strcmp(argv[i + 2], "&") == 0)) {
+            printf("Error: Invalid syntax.\n");
+            exit(-1);
+          }
 
           // redirect stdin
           if (strcmp(argv[i], "<") == 0) {
@@ -192,12 +254,12 @@ void execute(int argc, char* argv[]) {
             close(0);
             // open new file descriptor for reading only
             if ((infd = open(argv[i + 1], O_RDONLY)) == -1) {
-              printf("Could not open %s.\n", argv[i + 1]);
+              printf("Error: Unable to open redirection file.\n");
+              exit(-1);
             }
             // null out args
             argv[i] = NULL;
             argv[i + 1] = NULL;
-            printf("in: %d\n", i);
           }
 
           // redirect stdout
@@ -207,12 +269,12 @@ void execute(int argc, char* argv[]) {
             // open new file descriptor for writing, create if not exists
             // if a new file is created, user will have read/write permissions
             if ((outfd = open(argv[i + 1], O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR)) == -1) {
-              printf("Could not open %s.\n", argv[i + 1]);
+              printf("Error: Unable to open redirection file.\n");
+              exit(-1);
             }
             // null out args
             argv[i] = NULL;
             argv[i + 1] = NULL;
-            printf("out: %d\n", i);
           }
 
           // redirect stderr
@@ -222,18 +284,18 @@ void execute(int argc, char* argv[]) {
             // open new file descriptor for writing, create if not exists
             // if a new file is created, user will have read/write permissions
             if ((errfd = open(argv[i + 1], O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR)) == -1) {
-              printf("Could not open %s.\n", argv[i + 1]);
+              printf("Error: Unable to open redirection file.\n");
+              exit(-1);
             }
             // null out args
             argv[i] = NULL;
             argv[i + 1] = NULL;
-            printf("err: %d\n", i);
           }
 
         }
         // no arg passed to redirection
         else if (isredirect) {
-          printf("Error: no arg after redirect.\n");
+          printf("Error: Invalid syntax.\n");
           exit(-1);
         }
       }
@@ -245,7 +307,7 @@ void execute(int argc, char* argv[]) {
     if ((status = execvp(argv[0], argv)) < 0) {
       // check for permission errors
       if (errno == EACCES) {
-        printf("%s", "Error: Permission Denied.\n");
+        printf("%s", "Error: Permission denied.\n");
       }
       else {
         printf("%s", "Error: Command not found.\n");
@@ -255,23 +317,35 @@ void execute(int argc, char* argv[]) {
 
     // close new file descriptors
     if (infd != -1) {
-      printf("close in:");
       close(infd);
     }
     if (outfd != -1) {
-      printf("close out");
       close(outfd);
     }
     if (errfd != -1) {
-      printf("close out");
       close(errfd);
     }
   }
 
-  // parent process, wait for your child
+  // parent process
   else {
-    waitpid(pid, NULL, 0);
+    // wait if not backgrounded
+    if (!bg) {
+      waitpid(pid, NULL, 0);
+    }
   }
+}
+
+// Checks if the given string is a redirection character.
+// @param s
+//     the string to check
+// @return
+// 1 if true, 0 if false.
+//
+int is_redirect(char* s) {
+  return strcmp("<", s) == 0 ||
+      strcmp(">", s) == 0 ||
+      strcmp("2>", s) == 0;
 }
 
 // Function which exits, printing the necessary message
