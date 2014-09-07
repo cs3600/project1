@@ -31,8 +31,6 @@ int getTokens(char* line, char* argv[]);
 void execute(int argc, char* argv[]);
 int is_redirect(char* s);
 
-#include <stdio.h>
-
 /*
   Gets the next line of input from the console.
   Call free on the resulting char when done, to free up space.
