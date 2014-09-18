@@ -173,6 +173,9 @@ int getTokens(char* line, char* argv[]) {
           if (*line == 't') {
             *line = '\t';
           }
+					//else if (*line == 'n') {
+					//	*line = '\n';
+					//}
           // check if valid escape
           else if (*line != '\\' && *line != ' ' && *line != '&') {
             printf("Error: Unrecognized escape sequence.\n");
@@ -268,7 +271,7 @@ void execute(int argc, char* argv[]) {
             close(1);
             // open new file descriptor for writing, create if not exists
             // if a new file is created, user will have read/write permissions
-            if ((outfd = open(argv[i + 1], O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR)) == -1) {
+            if ((outfd = open(argv[i + 1], O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR)) == -1) {
               printf("Error: Unable to open redirection file.\n");
               exit(-1);
             }
@@ -283,7 +286,7 @@ void execute(int argc, char* argv[]) {
             close(2);
             // open new file descriptor for writing, create if not exists
             // if a new file is created, user will have read/write permissions
-            if ((errfd = open(argv[i + 1], O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR)) == -1) {
+            if ((errfd = open(argv[i + 1], O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR)) == -1) {
               printf("Error: Unable to open redirection file.\n");
               exit(-1);
             }
