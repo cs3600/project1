@@ -173,10 +173,6 @@ int getTokens(char* line, char* argv[]) {
           if (*line == 't') {
             *line = '\t';
           }
-					//else if (*line == 'n') {
-					//	*line = '\n';
-					//}
-          // check if valid escape
           else if (*line != '\\' && *line != ' ' && *line != '&') {
             printf("Error: Unrecognized escape sequence.\n");
             return -1;
